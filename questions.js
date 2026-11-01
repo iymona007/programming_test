@@ -1,0 +1,308 @@
+const LV = { 1: "Boshlangʼich", 2: "Oʼrta", 3: "Yuqori" };
+const PASS = 3; // daraja aniqlashda har darajadan 5 tadan kamida 3 tasi toʼgʼri boʼlsa, daraja oʼtilgan
+const KEY = "pydaraja-v1";
+
+// Format: ["Savol", [variantlar], toʼgʼri javob raqami (0 dan)]. Variantlar aralashtiriladi.
+// Daraja aniqlash: 15 ta savol, 1-5 Boshlangʼich, 6-10 Oʼrta, 11-15 Yuqori.
+const PLACEMENT_PY = [
+  ["Pythonda butun son turi qaysi?", ["int", "str", "float", "char"], 0],
+  ["print(2 ** 3) nimani chiqaradi?", ["6", "8", "9", "23"], 1],
+  ["Qaysi belgi qiymat berish uchun ishlatiladi?", ["=", "==", "!=", "=>"], 0],
+  ["Pythonda satr qaysi qoʼshtirnoq bilan yoziladi?", ["Faqat \"\"", "Faqat ''", "Ikkalasi ham boʼladi", "Faqat ``"], 2],
+  ["len('abc') natijasi nechaga teng?", ["2", "3", "4", "abc"], 1],
+  ["range(1, 4) qaysi sonlarni beradi?", ["1, 2, 3", "1, 2, 3, 4", "0, 1, 2, 3", "2, 3, 4"], 0],
+  ["Roʼyxatdan (a) oxirgi elementni qanday olamiz?", ["a[-1]", "a[last]", "a[len]", "a[0]"], 0],
+  ["'a' in d (d lugʼat) nimani qaytaradi?", ["Kalit bor-yoʼqligini (True/False)", "Qiymatni", "Indeksni", "Hech narsa"], 0],
+  ["return nima qiladi?", ["Funksiyadan qiymat qaytarib, uni tugatadi", "Ekranga chiqaradi", "Siklni toʼxtatadi", "Xato chiqaradi"], 0],
+  ["'a b c'.split() natijasi qaysi turda?", ["list", "str", "tuple", "int"], 0],
+  ["@staticmethod nima?", ["Obyektsiz chaqiriladigan sinf metodi", "Xatoni ushlash usuli", "Generator turi", "Import usuli"], 0],
+  ["Generator oddiy funksiyadan nimasi bilan farq qiladi?", ["Qiymatlarni birma-bir (yield) beradi", "Faqat sonlar bilan ishlaydi", "Faqat sinfda yoziladi", "Farqi yoʼq"], 0],
+  ["Pythonda GIL nima?", ["Bir vaqtda bitta oqim bayt-kodni bajarishi", "Grafik kutubxona", "Xato turi", "Fayl formati"], 0],
+  ["List comprehension nima uchun kerak?", ["Roʼyxatni qisqa yozuvda yaratish", "Faylni oʼqish", "Sinf yaratish", "Xatoni ushlash"], 0],
+  ["__str__ metodi nima uchun yoziladi?", ["Obyektni matn koʼrinishida ifodalash", "Obyektni oʼchirish", "Sikl yaratish", "Modul yuklash"], 0],
+];
+
+// Darslar: LESSONS[daraja] = [1-dars, 2-dars, ...], har bir dars 10 ta savol.
+const LESSONS_PY = {
+  1: [[
+    ["Ekranga matn chiqarish funksiyasi qaysi?", ["print()", "echo()", "write()", "show()"], 0],
+    ["x = 5 boʼlsa, x ning turi qanday?", ["int", "str", "float", "bool"], 0],
+    ["Pythonda izoh (comment) qanday yoziladi?", ["// izoh", "# izoh", "/* izoh */", "-- izoh"], 1],
+    ["3 + 4 * 2 ifodasining natijasi nechaga teng?", ["14", "10", "11", "9"], 2],
+    ["«Salom» qaysi turga kiradi?", ["str", "int", "list", "bool"], 0],
+    ["Foydalanuvchidan maʼlumot oluvchi funksiya qaysi?", ["input()", "get()", "read()", "scan()"], 0],
+    ["10 % 3 natijasi nechaga teng?", ["3", "1", "0", "10"], 1],
+    ["Qaysi biri toʼgʼri oʼzgaruvchi nomi?", ["1ism", "ism_1", "ism-1", "ism 1"], 1],
+    ["True va False qaysi turga kiradi?", ["bool", "str", "float", "list"], 0],
+    ["Shart tekshirish uchun qaysi kalit soʼz ishlatiladi?", ["if", "when", "check", "case"], 0],
+  ]],
+  2: [[
+    ["Roʼyxatga (list) element qoʼshish metodi qaysi?", ["add()", "append()", "push()", "put()"], 1],
+    ["len([1, 2, 3]) nimani qaytaradi?", ["2", "4", "3", "Xato beradi"], 2],
+    ["Qaysi biri toʼgʼri lugʼat (dict)?", ["{'a': 1}", "['a': 1]", "('a': 1)", "<'a': 1>"], 0],
+    ["for i in range(3): sikli necha marta aylanadi?", ["2", "3", "4", "Cheksiz"], 1],
+    ["Qaysi tur oʼzgarmas (immutable)?", ["list", "dict", "tuple", "set"], 2],
+    ["Qatorni katta harflarga oʼtkazuvchi metod qaysi?", ["upper()", "big()", "capital()", "caps()"], 0],
+    ["Funksiya qaysi kalit soʼz bilan eʼlon qilinadi?", ["func", "def", "function", "fn"], 1],
+    ["d = {'a': 1} boʼlsa, d['a'] nimaga teng?", ["a", "1", "None", "Xato"], 1],
+    ["while sikli qachon toʼxtaydi?", ["Shart False boʼlsa", "Hech qachon", "10 martadan keyin", "Shart True boʼlsa"], 0],
+    ["«Salom»[0] natijasi qanday?", ["S", "a", "Salom", "0"], 0],
+  ]],
+  3: [[
+    ["[x * x for x in range(4)] natijasi qanday?", ["[1, 4, 9, 16]", "[0, 1, 4, 9]", "[0, 2, 4, 6]", "[1, 2, 3, 4]"], 1],
+    ["Generator funksiyada qiymat qaytarish uchun qaysi kalit soʼz ishlatiladi?", ["return", "yield", "give", "emit"], 1],
+    ["__init__ metodi nima vazifa bajaradi?", ["Sinfni oʼchiradi", "Sinf obyekti yaratilganda ishga tushadi", "Faylni ochadi", "Modulni import qiladi"], 1],
+    ["Dekorator nima?", ["Funksiyani oʼrab, unga qoʼshimcha imkon beradigan funksiya", "Dizayn kutubxonasi", "Oʼzgaruvchi turi", "Xatoni ushlash usuli"], 0],
+    ["try / except nima uchun ishlatiladi?", ["Xatolarni ushlash uchun", "Sikl yaratish uchun", "Modul import qilish uchun", "Sinf yaratish uchun"], 0],
+    ["*args nimani anglatadi?", ["Istalgan sondagi pozitsion argumentlar", "Koʼpaytirish amali", "Lugʼat argument", "Ikkita argument"], 0],
+    ["Lambda nima?", ["Nomsiz qisqa funksiya", "Sikl turi", "Modul nomi", "Xato turi"], 0],
+    ["with open('f.txt') as f: nimasi qulay?", ["Fayl avtomatik yopiladi", "Fayl shifrlanadi", "Fayl oʼchiriladi", "Fayl nusxalanadi"], 0],
+    ["set (toʼplam) da takroriy elementlar qanday boʼladi?", ["Takrorlanmaydi", "Takrorlanadi", "Xato beradi", "Tartiblanadi"], 0],
+    ["is va == orasidagi farq nima?", ["is bir xil obyektni, == qiymat tengligini tekshiradi", "Farqi yoʼq", "is faqat sonlar uchun", "== xotirani tekshiradi"], 0],
+  ]],
+};
+
+// ---------- HTML ----------
+const PLACEMENT_HTML = [
+  ["HTML nima uchun ishlatiladi?", ["Sahifa tuzilmasi uchun", "Faqat dizayn uchun", "Server yozish uchun", "Bazalar uchun"], 0],
+  ["Eng katta sarlavha tegi qaysi?", ["<h1>", "<h6>", "<head>", "<title>"], 0],
+  ["Havola yaratadigan teg qaysi?", ["<a>", "<link>", "<href>", "<url>"], 0],
+  ["Rasm qoʼyadigan teg qaysi?", ["<img>", "<image>", "<pic>", "<src>"], 0],
+  ["Paragraf tegi qaysi?", ["<p>", "<para>", "<text>", "<pg>"], 0],
+  ["Nuqtali roʼyxat tegi qaysi?", ["<ul>", "<ol>", "<li>", "<dl>"], 0],
+  ["<a> da manzil qaysi atributda yoziladi?", ["href", "src", "link", "url"], 0],
+  ["Rasmning muqobil matni qaysi atributda?", ["alt", "title", "name", "text"], 0],
+  ["Jadval qatori tegi qaysi?", ["<tr>", "<td>", "<th>", "<row>"], 0],
+  ["Matn kiritish maydoni tegi qaysi?", ["<input>", "<field>", "<textbox>", "<type>"], 0],
+  ["Semantik teg qaysi?", ["<article>", "<div>", "<span>", "<b>"], 0],
+  ["<meta name='viewport'> nima uchun?", ["Mobil ekranga moslash", "Rasm yuklash", "Skript ulash", "Sarlavha berish"], 0],
+  ["<!DOCTYPE html> nimani bildiradi?", ["HTML5 hujjat turini", "CSS faylni", "Skriptni", "Rasm formatini"], 0],
+  ["<script defer> nima qiladi?", ["HTML tahlil tugagach bajaradi", "Skriptni oʼchiradi", "Faqat mobilda ishlaydi", "Xato beradi"], 0],
+  ["<label for='x'> nima uchun kerak?", ["Maydonga bogʼlab, bosilganda fokus berish", "Havola yaratish", "Jadval yaratish", "Rasm sarlavhasi"], 0],
+];
+const LESSONS_HTML = {
+  1: [[
+    ["HTML hujjati qaysi teg bilan boshlanadi?", ["<html>", "<body>", "<head>", "<p>"], 0],
+    ["Brauzer tabidagi sarlavha qaysi tegda?", ["<title>", "<h1>", "<header>", "<top>"], 0],
+    ["Satr oʼtkazish tegi qaysi?", ["<br>", "<lb>", "<nl>", "<break>"], 0],
+    ["Qalin matn uchun qaysi teg?", ["<b>", "<bold>", "<big>", "<em>"], 0],
+    ["Koʼrinadigan kontent qaysi tegda joylashadi?", ["<body>", "<head>", "<meta>", "<title>"], 0],
+    ["Raqamli roʼyxat tegi qaysi?", ["<ol>", "<ul>", "<li>", "<nl>"], 0],
+    ["HTMLda izoh qanday yoziladi?", ["<!-- izoh -->", "// izoh", "# izoh", "/* izoh */"], 0],
+    ["Eng kichik sarlavha tegi qaysi?", ["<h6>", "<h1>", "<h3>", "<small>"], 0],
+    ["Qiya (italic) matn uchun qaysi teg?", ["<i>", "<it>", "<slant>", "<u>"], 0],
+    ["Gorizontal chiziq tegi qaysi?", ["<hr>", "<line>", "<br>", "<border>"], 0],
+  ]],
+  2: [[
+    ["<div> nima uchun ishlatiladi?", ["Blok konteyner sifatida", "Matnni qalin qilish", "Rasm qoʼyish", "Havola yaratish"], 0],
+    ["<span> qanday element?", ["Qator ichidagi (inline)", "Blok", "Jadval", "Forma"], 0],
+    ["id va class farqi nima?", ["id yagona, class takrorlanishi mumkin", "Farqi yoʼq", "class yagona, id koʼp", "id faqat rasmga"], 0],
+    ["Havolani yangi oynada ochish atributi?", ["target='_blank'", "new='true'", "open='win'", "window='new'"], 0],
+    ["<th> tegi nima?", ["Jadval sarlavha katagi", "Jadval qatori", "Roʼyxat elementi", "Forma maydoni"], 0],
+    ["Parol maydoni uchun input turi qaysi?", ["password", "secret", "hidden", "pass"], 0],
+    ["<button> nima qiladi?", ["Tugma yaratadi", "Havola yaratadi", "Rasm qoʼyadi", "Jadval yaratadi"], 0],
+    ["Forma yuborish usuli qaysi atributda?", ["method", "send", "mode", "way"], 0],
+    ["Roʼyxat elementi tegi qaysi?", ["<li>", "<item>", "<list>", "<ul>"], 0],
+    ["Qaysi rasm yozuvi toʼgʼri?", ["<img src='a.png' alt='Rasm'>", "<img href='a.png'>", "<image src='a.png'>", "<img>a.png</img>"], 0],
+  ]],
+  3: [[
+    ["<section> va <div> farqi nima?", ["<section> semantik maʼnoga ega", "Farqi yoʼq", "<div> semantik", "<section> faqat rasm uchun"], 0],
+    ["<picture> nima uchun?", ["Ekranga qarab rasm tanlash", "Rasmni oʼchirish", "Video qoʼyish", "Rasmni aylantirish"], 0],
+    ["lang atributi nimaga kerak?", ["Sahifa tilini bildirish", "Skript ulash", "Stil berish", "Havola qoʼyish"], 0],
+    ["data-* atributlari nima?", ["Maxsus maʼlumot saqlash", "Stil berish", "Rasm oʼlchami", "Server manzili"], 0],
+    ["<nav> tegi nima uchun?", ["Navigatsiya havolalari", "Pastki qism", "Rasm", "Forma"], 0],
+    ["required atributi inputga nima qiladi?", ["Toʼldirishni majburiy qiladi", "Yashiradi", "Rangini oʼzgartiradi", "Oʼchiradi"], 0],
+    ["<iframe> nima qiladi?", ["Boshqa sahifani ichiga joylaydi", "Rasm aylantiradi", "Jadval yaratadi", "Skript yuklaydi"], 0],
+    ["<video> da boshqaruv tugmalari qaysi atribut bilan chiqadi?", ["controls", "buttons", "panel", "ui"], 0],
+    ["<footer> qayerda ishlatiladi?", ["Sahifa yoki boʼlim pastida", "Sahifa tepasida", "Rasm ichida", "Jadvalda"], 0],
+    ["Kodlashni berish uchun qaysi teg ishlatiladi?", ["<meta charset='utf-8'>", "<code utf-8>", "<lang utf-8>", "<head utf-8>"], 0],
+  ]],
+};
+
+// ---------- CSS ----------
+const PLACEMENT_CSS = [
+  ["Matn rangi qaysi xossa bilan beriladi?", ["color", "font-color", "text-color", "fg"], 0],
+  ["Fon rangi xossasi qaysi?", ["background-color", "bg", "color-bg", "back"], 0],
+  ["Class selektori qaysi belgi bilan boshlanadi?", [".", "#", "*", "@"], 0],
+  ["Shrift oʼlchami xossasi qaysi?", ["font-size", "text-size", "size", "font-style"], 0],
+  ["CSS izohi qanday yoziladi?", ["/* izoh */", "// izoh", "# izoh", "<!-- izoh -->"], 0],
+  ["margin va padding farqi nima?", ["margin tashqi, padding ichki masofa", "Farqi yoʼq", "margin ichki, padding tashqi", "Ikkalasi rang"], 0],
+  ["display: flex nima uchun?", ["Elementlarni moslashuvchan joylash", "Elementni yashirish", "Rang berish", "Shrift tanlash"], 0],
+  ["id selektori qaysi belgi bilan yoziladi?", ["#", ".", "&", "%"], 0],
+  ["position: absolute nimaga nisbatan joylashadi?", ["Eng yaqin positioned ota-elementga", "Har doim sahifa tepasiga", "Qoʼshni elementga", "Ekran markaziga"], 0],
+  ["border-radius nima qiladi?", ["Burchaklarni yumaloqlaydi", "Chiziq qalinligini beradi", "Rang beradi", "Soya beradi"], 0],
+  ["Grid ustunlarini belgilovchi xossa qaysi?", ["grid-template-columns", "grid-cols", "columns-grid", "grid-width"], 0],
+  ["z-index nima uchun?", ["Elementlarning ustma-ust tartibi", "Shrift qalinligi", "Burilish", "Shaffoflik"], 0],
+  ["@media nima uchun ishlatiladi?", ["Ekran oʼlchamiga moslash", "Rasm yuklash", "Shrift ulash", "Animatsiya"], 0],
+  ["Qaysi biri eng yuqori ustunlikka (specificity) ega?", ["Inline style", "Class", "Teg selektori", "* selektori"], 0],
+  ["rem birligi nimaga nisbatan hisoblanadi?", ["Ildiz (html) shrift oʼlchamiga", "Ota-element eniga", "Ekran balandligiga", "Rasm oʼlchamiga"], 0],
+];
+const LESSONS_CSS = {
+  1: [[
+    ["text-align: center nima qiladi?", ["Matnni markazga joylaydi", "Rangini oʼzgartiradi", "Qalin qiladi", "Yashiradi"], 0],
+    ["Matnni qalin qiladigan qoida qaysi?", ["font-weight: bold", "text-bold: on", "font: thick", "bold: true"], 0],
+    ["Havola tagidagi chiziqni olib tashlash?", ["text-decoration: none", "underline: off", "line: none", "border: 0"], 0],
+    ["width: 50% nimani bildiradi?", ["Ota-element enining yarmi", "50 piksel", "Ekranning 50 qismi", "Xato yozuv"], 0],
+    ["CSS faylni HTMLga ulash tegi qaysi?", ["<link rel='stylesheet'>", "<css>", "<style-file>", "<import>"], 0],
+    ["Qaysi biri toʼgʼri hex rang?", ["#ff0000", "ff0000#", "#gg0000", "red#"], 0],
+    ["Element balandligi xossasi qaysi?", ["height", "tall", "size-y", "length"], 0],
+    ["list-style: none nima qiladi?", ["Roʼyxat belgilarini olib tashlaydi", "Roʼyxatni oʼchiradi", "Qalin qiladi", "Raqamlaydi"], 0],
+    ["box-shadow nima beradi?", ["Element soyasi", "Matn rangi", "Chiziq", "Fon rasmi"], 0],
+    ["Barcha <p> elementlarini tanlash selektori?", ["p", ".p", "#p", "*p"], 0],
+  ]],
+  2: [[
+    ["a:hover qachon ishlaydi?", ["Sichqoncha ustiga kelganda", "Bosilganda", "Sahifa yuklanganda", "Hech qachon"], 0],
+    ["flex-direction: column nima qiladi?", ["Elementlarni ustun qilib joylaydi", "Qator qiladi", "Yashiradi", "Aylantiradi"], 0],
+    ["justify-content: center flexda nimani markazlaydi?", ["Bosh oʼq boʼyicha elementlarni", "Faqat matnni", "Rasmni", "Fonni"], 0],
+    ["box-sizing: border-box nima qiladi?", ["Padding va border enga kiradi", "Chiziq qoʼshadi", "Soya beradi", "Yumaloqlaydi"], 0],
+    ["overflow: hidden nima qiladi?", ["Sigʼmagan qismni yashiradi", "Elementni oʼchiradi", "Siljitadi", "Qalin qiladi"], 0],
+    ["opacity: 0.5 nima beradi?", ["Yarim shaffoflik", "Yarim oʼlcham", "Yarim tezlik", "Yarim rang"], 0],
+    ["line-height nima?", ["Qatorlar orasidagi balandlik", "Chiziq qalinligi", "Element balandligi", "Shrift turi"], 0],
+    [":first-child nimani tanlaydi?", ["Ota-elementdagi birinchi bolani", "Oxirgi bolani", "Barcha bolalarni", "Ikkinchi bolani"], 0],
+    ["display: none nima qiladi?", ["Elementni butunlay yashiradi", "Shaffof qiladi", "Kichraytiradi", "Siljitadi"], 0],
+    ["gap xossasi nima uchun?", ["Flex/grid elementlari orasidagi masofa", "Rang uchun", "Rasm uchun", "Shrift uchun"], 0],
+  ]],
+  3: [[
+    ["transition nima qiladi?", ["Qiymat oʼzgarishini silliq qiladi", "Elementni yashiradi", "Rasm yuklaydi", "Shrift ulaydi"], 0],
+    ["transform: rotate(45deg) nima qiladi?", ["Elementni 45 gradusga buradi", "45 pikselga siljitadi", "Kattalashtiradi", "Yashiradi"], 0],
+    ["var(--rang) nimani bildiradi?", ["CSS oʼzgaruvchisini ishlatish", "JS funksiyasi", "HTML atributi", "Rasm manzili"], 0],
+    [":nth-child(2) nimani tanlaydi?", ["Ikkinchi bolani", "Ikkita bolani", "Oxirgi bolani", "Har ikkinchi sinfni"], 0],
+    ["::before nima uchun ishlatiladi?", ["Element oldiga soxta kontent qoʼshish", "Elementni oʼchirish", "Rang berish", "Rasm yuklash"], 0],
+    ["position: sticky nima qiladi?", ["Aylantirishda joyida yopishib turadi", "Doim yashiradi", "Sahifa oxiriga qoʼyadi", "Burchakka siljitadi"], 0],
+    ["calc() nima uchun kerak?", ["Qiymatlarni hisoblash (masalan 100% - 20px)", "Rang tanlash", "Matn hisoblash", "Rasm hisoblash"], 0],
+    ["clamp(1rem, 3vw, 2rem) nima qiladi?", ["Qiymatni min va max orasida ushlaydi", "Rangni belgilaydi", "Elementni buradi", "Matnni kesadi"], 0],
+    ["@keyframes nima uchun?", ["Animatsiya bosqichlarini belgilash", "Shrift ulash", "Ekran moslash", "Rasm oʼlchami"], 0],
+    ["grid-column: span 2 nima qiladi?", ["Elementni 2 ustunga choʼzadi", "2 qator qoʼshadi", "Yashiradi", "Ikkiga boʼladi"], 0],
+  ]],
+};
+
+// ---------- JavaScript ----------
+const PLACEMENT_JS = [
+  ["Oʼzgaruvchi eʼlon qilish kalit soʼzlari qaysilar?", ["let va const", "int va str", "dim va set", "var-int"], 0],
+  ["Konsolga chiqarish funksiyasi qaysi?", ["console.log()", "print()", "echo()", "write.console()"], 0],
+  ["3 + '3' natijasi nima?", ["'33'", "6", "NaN", "Xato"], 0],
+  ["Massiv uzunligi qaysi xossada?", ["length", "size", "count", "len"], 0],
+  ["=== operatori nima qiladi?", ["Qiymat va turni qatʼiy solishtiradi", "Qiymat beradi", "Faqat turini tekshiradi", "Qoʼshadi"], 0],
+  ["Massiv oxiriga element qoʼshish metodi?", ["push()", "add()", "append()", "put()"], 0],
+  ["Qaysi biri strelkali funksiya?", ["(a) => a * 2", "function => a", "a -> a * 2", "=> (a)"], 0],
+  ["typeof null nimani qaytaradi?", ["'object'", "'null'", "'undefined'", "'number'"], 0],
+  ["map() nima qaytaradi?", ["Yangi massiv", "Eski massivni oʼzgartiradi", "Son", "Hech narsa"], 0],
+  ["document.getElementById nima qiladi?", ["Id boʼyicha elementni topadi", "Element yaratadi", "Elementni oʼchiradi", "Sahifani yuklaydi"], 0],
+  ["Closure nima?", ["Funksiya oʼz tashqi oʼzgaruvchilarini eslab qoladi", "Sikl turi", "Xato turi", "Modul nomi"], 0],
+  ["Promise nima?", ["Kelajakda tugaydigan amal natijasi", "Sikl", "Oʼzgaruvchi turi", "CSS qoidasi"], 0],
+  ["await qayerda ishlatiladi?", ["async funksiya ichida", "Faqat siklda", "Faqat HTMLda", "Hech qayerda"], 0],
+  ["Strelkali funksiyada this qanday?", ["Tashqi kontekstdan olinadi", "Doim window", "Doim undefined", "Doim null"], 0],
+  ["Event loop nima uchun kerak?", ["Asinxron vazifalarni navbat bilan bajarish", "Siklni tezlatish", "Rasm yuklash", "Xatolarni ushlash"], 0],
+];
+const LESSONS_JS = {
+  1: [[
+    ["JS da bir qatorli izoh qanday yoziladi?", ["// izoh", "# izoh", "<!-- izoh -->", "-- izoh"], 0],
+    ["const bilan eʼlon qilingan oʼzgaruvchini qayta qiymatlab boʼladimi?", ["Yoʼq", "Ha", "Faqat sonni", "Faqat matnni"], 0],
+    ["Brauzerda xabar oynasini chiqaruvchi funksiya?", ["alert()", "msg()", "popup()", "show()"], 0],
+    ["Shart operatori qaysi?", ["if", "when", "case-of", "check"], 0],
+    ["10 % 3 natijasi nechaga teng?", ["1", "3", "0", "10"], 0],
+    ["Mantiqiy qiymatlar qaysilar?", ["true va false", "yes va no", "1 va 0 faqat", "on va off"], 0],
+    ["'salom'.length nechaga teng?", ["5", "4", "6", "salom"], 0],
+    ["Qaysi biri sikl?", ["for", "loop-do", "repeat", "cycle"], 0],
+    ["Number('abc') natijasi nima?", ["NaN", "0", "abc", "Xato"], 0],
+    ["Qatorlarni birlashtirish operatori qaysi?", ["+", "&", ".", "++"], 0],
+  ]],
+  2: [[
+    ["Massivdan oxirgi elementni olib tashlash metodi?", ["pop()", "remove()", "cut()", "drop()"], 0],
+    ["Obyektdagi xossaga murojaat qaysi?", ["obj.key", "obj->key", "obj::key", "obj(key)"], 0],
+    ["filter() nima qiladi?", ["Shartga mos elementlardan yangi massiv beradi", "Massivni tartiblaydi", "Elementni oʼchiradi", "Sonni hisoblaydi"], 0],
+    ["Tugma bosilishini tinglash metodi qaysi?", ["addEventListener('click', fn)", "onPress(fn)", "listen(click)", "watch('click')"], 0],
+    ["JSON.parse nima qiladi?", ["JSON matnini obyektga aylantiradi", "Obyektni matnga aylantiradi", "Faylni oʼqiydi", "Oʼchiradi"], 0],
+    ["Template literal qaysi belgi bilan yoziladi?", ["`...${x}...`", "'...{x}...'", "\"...[x]...\"", "<...x...>"], 0],
+    ["Massivdagi elementlar boʼylab yurish metodi?", ["forEach()", "walk()", "each()", "iterate()"], 0],
+    ["undefined nima?", ["Qiymat berilmagan oʼzgaruvchi", "Nol", "Boʼsh matn", "Xato turi"], 0],
+    ["localStorage nima uchun?", ["Brauzerda maʼlumot saqlash", "Serverga yuborish", "Rasm yuklash", "Stil berish"], 0],
+    ["== va === farqi nima?", ["=== turni ham tekshiradi", "Farqi yoʼq", "== qatʼiyroq", "=== faqat sonlar uchun"], 0],
+  ]],
+  3: [[
+    ["async funksiya nimani qaytaradi?", ["Promise", "Son", "Matn", "undefined"], 0],
+    ["Spread operatori qaysi?", ["...", "**", "&&", "=>"], 0],
+    ["Destrukturizatsiya: const {a} = obj nima qiladi?", ["obj.a ni a ga oladi", "a ni oʼchiradi", "obj ni nusxalaydi", "Xato beradi"], 0],
+    ["reduce() nima uchun ishlatiladi?", ["Massivni bitta qiymatga keltirish", "Massivni kamaytirish", "Elementni oʼchirish", "Tartiblash"], 0],
+    ["try/catch nima uchun?", ["Xatolarni ushlash", "Sikl yaratish", "Funksiya chaqirish", "Import qilish"], 0],
+    ["fetch() nima qiladi?", ["Tarmoq soʼrovini yuboradi", "Elementni topadi", "Faylni oʼchiradi", "Rang beradi"], 0],
+    ["Prototype nima?", ["Obyektlar meros oladigan boshqa obyekt", "Funksiya turi", "Sikl", "Modul"], 0],
+    ["import / export nima uchun?", ["Modullar oʼrtasida kod ulashish", "Rasm yuklash", "Xato ushlash", "Stil berish"], 0],
+    ["Debounce nima?", ["Tez-tez chaqirilishni cheklash usuli", "Xato turi", "Sikl turi", "Massiv metodi"], 0],
+    ["Object.keys(obj) nimani qaytaradi?", ["Kalitlar massivini", "Qiymatlar massivini", "Obyekt uzunligini", "Nusxasini"], 0],
+  ]],
+};
+
+// ---------- SQL ----------
+const PLACEMENT_SQL = [
+  ["Maʼlumotlarni tanlash uchun qaysi buyruq ishlatiladi?", ["SELECT", "GET", "PICK", "FETCH"], 0],
+  ["Barcha ustunlarni tanlash belgisi qaysi?", ["*", "ALL", "#", "%"], 0],
+  ["Jadval nomi qaysi soʼzdan keyin yoziladi?", ["FROM", "IN", "OF", "TABLE"], 0],
+  ["Shart qoʼyish uchun qaysi kalit soʼz ishlatiladi?", ["WHERE", "IF", "WHEN", "CHECK"], 0],
+  ["Yangi qator qoʼshish buyrugʼi qaysi?", ["INSERT INTO", "ADD ROW", "PUT", "NEW"], 0],
+  ["Natijani tartiblash uchun nima ishlatiladi?", ["ORDER BY", "SORT BY", "GROUP BY", "ARRANGE"], 0],
+  ["Qatorlar sonini sanaydigan funksiya qaysi?", ["COUNT()", "SUM()", "TOTAL()", "NUM()"], 0],
+  ["Maʼlumotni yangilash buyrugʼi qaysi?", ["UPDATE", "CHANGE", "MODIFY", "SET ROW"], 0],
+  ["Ikkita jadvalni bogʼlash uchun nima ishlatiladi?", ["JOIN", "MERGE", "LINK", "CONNECT"], 0],
+  ["Qatorlarni guruhlash uchun nima ishlatiladi?", ["GROUP BY", "SORT BY", "COLLECT", "SPLIT"], 0],
+  ["WHERE va HAVING farqi nima?", ["HAVING guruhlangan natijani filtrlaydi", "Farqi yoʼq", "WHERE faqat sonlar uchun", "HAVING jadval yaratadi"], 0],
+  ["PRIMARY KEY nima?", ["Qatorni yagona aniqlovchi ustun", "Rasm ustuni", "Ixtiyoriy matn", "Jadval nomi"], 0],
+  ["LEFT JOIN nimani qaytaradi?", ["Chap jadvalning barcha qatorlarini", "Faqat mos qatorlarni", "Oʼng jadvalning hammasini", "Hech narsa"], 0],
+  ["Indeks nima uchun kerak?", ["Qidiruvni tezlashtirish", "Jadvalni oʼchirish", "Rang berish", "Zaxira nusxa olish"], 0],
+  ["Tranzaksiyada ROLLBACK nima qiladi?", ["Oʼzgarishlarni bekor qiladi", "Saqlaydi", "Jadval yaratadi", "Foydalanuvchi qoʼshadi"], 0],
+];
+const LESSONS_SQL = {
+  1: [[
+    ["Jadvalni oʼchirish buyrugʼi qaysi?", ["DROP TABLE", "CLEAR TABLE", "REMOVE ROWS", "CUT TABLE"], 0],
+    ["SELECT name FROM users; nimani qaytaradi?", ["users jadvalidagi name ustunini", "Butun jadvalni", "Faqat birinchi qatorni", "Qatorlar sonini"], 0],
+    ["Takrorlanmas qiymatlarni olish uchun nima yoziladi?", ["DISTINCT", "UNIQUE ONLY", "SINGLE", "DIFF"], 0],
+    ["Natijani 5 ta qator bilan cheklash (MySQL)?", ["LIMIT 5", "MAX 5", "ONLY 5", "STOP 5"], 0],
+    ["Matnni andoza boʼyicha solishtirish operatori qaysi?", ["LIKE", "SIMILAR", "MATCHES", "EQUALS"], 0],
+    ["SQL da bir qatorli izoh qanday yoziladi?", ["-- izoh", "// izoh", "<!-- izoh -->", "** izoh"], 0],
+    ["Butun son ustuni uchun qaysi tur?", ["INT", "VARCHAR", "DATE", "TEXT"], 0],
+    ["NULL nimani bildiradi?", ["Qiymat yoʼqligini", "0 ni", "Boʼsh matnni", "False ni"], 0],
+    ["AND operatori qachon true beradi?", ["Ikkala shart ham toʼgʼri boʼlsa", "Kamida bittasi toʼgʼri boʼlsa", "Hech biri toʼgʼri boʼlmasa", "Doim"], 0],
+    ["WHERE age > 18 nimani tanlaydi?", ["Yoshi 18 dan kattalarni", "Yoshi 18 ga tengni", "Yoshi 18 dan kichiklarni", "Hammasini"], 0],
+  ]],
+  2: [[
+    ["SUM() nima qiladi?", ["Qiymatlar yigʼindisini hisoblaydi", "Qatorlarni sanaydi", "Eng kattasini topadi", "Matn qoʼshadi"], 0],
+    ["AVG() nimani hisoblaydi?", ["Oʼrtacha qiymatni", "Yigʼindini", "Eng kichikni", "Sonini"], 0],
+    ["MAX() nimani qaytaradi?", ["Eng katta qiymatni", "Eng kichigini", "Oʼrtachasini", "Sonini"], 0],
+    ["ORDER BY name DESC nima qiladi?", ["Nom boʼyicha kamayish tartibida saralaydi", "Ortish tartibida saralaydi", "Nomni oʼchiradi", "Guruhlaydi"], 0],
+    ["DELETE FROM t WHERE id = 1; nima qiladi?", ["id = 1 qatorni oʼchiradi", "Jadvalni oʼchiradi", "Hamma qatorni oʼchiradi", "Ustunni oʼchiradi"], 0],
+    ["IN operatori nimani tekshiradi?", ["Qiymat roʼyxatda bor-yoʼqligini", "Jadval borligini", "Ustun turini", "Qatorlar sonini"], 0],
+    ["BETWEEN 10 AND 20 qaysi qiymatlarni oladi?", ["10 dan 20 gacha (ikkalasi ham kiradi)", "Faqat 11 dan 19 gacha", "10 dan kichiklarni", "20 dan kattalarni"], 0],
+    ["ALTER TABLE nima qiladi?", ["Jadval tuzilmasini oʼzgartiradi", "Jadvalni oʼchiradi", "Qator qoʼshadi", "Natijani saralaydi"], 0],
+    ["INNER JOIN nimani qaytaradi?", ["Ikkala jadvalda mos kelgan qatorlarni", "Chap jadvalning hammasini", "Oʼng jadvalning hammasini", "Hech narsani"], 0],
+    ["Ustunga vaqtinchalik nom berish uchun qaysi soʼz?", ["AS", "NAME", "CALL", "TO"], 0],
+  ]],
+  3: [[
+    ["Subquery (ichki soʼrov) nima?", ["Soʼrov ichidagi boshqa soʼrov", "Jadval turi", "Indeks", "Foydalanuvchi"], 0],
+    ["FOREIGN KEY nima uchun?", ["Boshqa jadval kalitiga bogʼlash", "Qatorni oʼchirish", "Ustunni yashirish", "Saralash"], 0],
+    ["UNION nima qiladi?", ["Ikki soʼrov natijasini birlashtiradi", "Jadval yaratadi", "Indeks qoʼshadi", "Qator oʼchiradi"], 0],
+    ["Normalizatsiya nima?", ["Takrorlanishni kamaytirib jadvallarni tartiblash", "Jadvalni oʼchirish", "Zaxira nusxa", "Maʼlumotni shifrlash"], 0],
+    ["EXISTS qachon true beradi?", ["Ichki soʼrov kamida bitta qator qaytarsa", "Jadval boʼsh boʼlsa", "Ustun NULL boʼlsa", "Doim"], 0],
+    ["ROW_NUMBER() nima qiladi?", ["Qatorlarga tartib raqami beradi", "Qatorlarni oʼchiradi", "Qatorlarni sanaydi", "Jadval yaratadi"], 0],
+    ["CTE (WITH) nima?", ["Vaqtinchalik nomlangan natija toʼplami", "Doimiy jadval", "Indeks turi", "Xato turi"], 0],
+    ["SQL injection nima?", ["Soʼrovga zararli kod kiritib qilinadigan hujum", "Tez soʼrov usuli", "Indeks turi", "Jadval turi"], 0],
+    ["ACID dagi A harfi nimani bildiradi?", ["Atomicity (boʼlinmaslik)", "Accuracy", "Access", "Archive"], 0],
+    ["EXPLAIN nima qiladi?", ["Soʼrov bajarilish rejasini koʼrsatadi", "Soʼrovni oʼchiradi", "Jadval yaratadi", "Indeks oʼchiradi"], 0],
+  ]],
+};
+
+// ---------- Fanlar ----------
+let subj = "python", PLACEMENT, LESSONS;
+const SUBJECTS = {
+  python: { name: "Python", placement: PLACEMENT_PY, lessons: LESSONS_PY },
+  html: { name: "HTML", placement: PLACEMENT_HTML, lessons: LESSONS_HTML },
+  css: { name: "CSS", placement: PLACEMENT_CSS, lessons: LESSONS_CSS },
+  js: { name: "JavaScript", placement: PLACEMENT_JS, lessons: LESSONS_JS },
+  sql: { name: "SQL", placement: PLACEMENT_SQL, lessons: LESSONS_SQL },
+};
+// Python progressi eski kalitda qoladi, boshqa fanlar oʼz kalitida saqlanadi
+const sk = () => (subj === "python" ? KEY : KEY + "-" + subj);
+function useSubject(k) {
+  subj = k; PLACEMENT = SUBJECTS[k].placement; LESSONS = SUBJECTS[k].lessons;
+  try { localStorage.setItem("pydaraja-subj", k); } catch (e) {}
+  s = load();
+}
